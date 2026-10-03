@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DW Agent</title>
+  <link rel="stylesheet" href="./assets/styles.css?v=20260924-account-menu-v2">
+  <link rel="stylesheet" href="./assets/library.css?v=20260831-workspace-library-v1">
+  <link rel="stylesheet" href="./assets/knowledge-hub.css?v=20260914-management-style-v1">
+  <link rel="stylesheet" href="./assets/skills.css?v=20260831-reviewer-v1">
+  <link rel="stylesheet" href="./assets/skill-review.css?v=20260824-skill-review-v1">
+  <script defer src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script defer src="./assets/pages-mock.js?v=v1.0.0-github-pages"></script>
+  <script defer src="./assets/jszip.min.js?v=3.10.1"></script>
+  <script defer src="./assets/skill-review.js?v=20260831-deep-link-v2"></script>
+  <script defer src="./assets/app.js?v=20260924-account-menu-v2"></script>
+  <script defer src="./assets/library.js?v=20260831-workspace-library-v1"></script>
+  <script defer src="./assets/knowledge-hub.js?v=20260914-auth-management-label-v1"></script>
+  <script defer src="./assets/skills.js?v=20260909-skill-toolbar-v1"></script>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="brand-panel is-collapsed" aria-label="工作区">
+      <div class="brand" aria-label="DW Agent"><img class="brand-mark" src="./assets/logo-icon.svg?v=20260825-dw-agent-logo-v2" alt=""><strong class="brand-name">DW Agent</strong></div>
+      <nav class="brand-nav" aria-label="主导航">
+        <button class="nav-button is-active" type="button" data-view="chat" aria-label="对话" title="对话"><i data-lucide="bot"></i><span>对话</span></button>
+        <button class="nav-button" type="button" data-view="requirements" aria-label="需求" title="需求"><i data-lucide="clipboard-list"></i><span>需求</span></button>
+        <button class="nav-button" type="button" data-view="knowledge" aria-label="知识库" title="知识库"><i data-lucide="library-big"></i><span>知识库</span></button>
+        <button class="nav-button" type="button" data-view="skills" aria-label="Skills" title="Skills"><i data-lucide="blocks"></i><span>Skills</span></button>
+        <button class="nav-button" type="button" data-view="agents" aria-label="Agents" title="Agents"><i data-lucide="bot"></i><span>Agents</span></button>
+      </nav>
+      <div class="brand-spacer"></div>
+      <button class="icon-button sidebar-collapse" type="button" aria-label="展开左导航" title="展开左导航" aria-expanded="false"><i data-lucide="chevron-right"></i></button>
+      <div class="workspace-switcher">
+        <section id="workspace-menu" class="workspace-menu" aria-label="选择空间" hidden>
+          <header class="workspace-menu-head"><span id="workspace-menu-icon" class="space-option-icon workspace-menu-icon">AN</span><span class="workspace-menu-copy"><strong id="workspace-menu-name">Demo</strong><small>当前空间</small></span><button id="space-flyout-trigger" class="space-flyout-trigger" type="button" aria-label="切换空间" aria-expanded="false" title="切换空间"><i data-lucide="arrow-left-right"></i></button></header>
+          <section id="space-picker-flyout" class="space-picker-flyout" aria-label="切换空间" hidden>
+            <label class="space-search"><i data-lucide="search"></i><input id="space-search-input" type="search" placeholder="搜索空间名称" aria-label="搜索空间名称"></label>
+            <div id="space-options" class="space-options" role="listbox"></div>
+          </section>
+          <div class="workspace-menu-divider"></div>
+          <div class="account-current"><span id="account-avatar" class="account-avatar"><i data-lucide="user-round"></i></span><span class="account-current-copy"><strong id="account-name">demo.user</strong><small>当前登录账号</small></span><button id="account-logout" class="account-logout" type="button" aria-label="退出" title="退出"><i data-lucide="log-out"></i></button></div>
+          <button id="account-home-open" class="account-home-open" type="button" aria-label="打开系统设置"><i data-lucide="settings"></i><span>系统设置</span><i data-lucide="chevron-right"></i></button>
+        </section>
+        <button id="workspace-trigger" class="space-avatar" type="button" aria-label="切换空间及账户" title="空间及账户" aria-expanded="false"><span id="active-space-icon"><i data-lucide="settings"></i></span><span class="space-trigger-copy"><strong id="active-space-name">Demo</strong><small>当前空间</small></span><i class="space-trigger-chevron" data-lucide="chevron-down"></i></button>
+      </div>
+    </aside>
+
+    <aside class="task-panel" aria-label="对话列表">
+      <header class="task-top">
+        <button id="new-chat-button" class="new-chat-button" type="button"><i data-lucide="plus"></i><span>新建对话</span></button>
+      </header>
+      <section class="recent-section">
+        <div class="section-title"><h2>最近对话</h2><button id="conversation-search-toggle" class="conversation-search-toggle" type="button" aria-label="搜索最近对话" title="搜索最近对话" aria-expanded="false"><i data-lucide="search"></i></button></div>
+        <label id="conversation-search" class="conversation-search" hidden><i data-lucide="search"></i><input id="conversation-search-input" type="search" placeholder="搜索对话名称" aria-label="搜索最近对话" autocomplete="off"><button id="conversation-search-clear" type="button" aria-label="清空搜索" title="清空搜索"><i data-lucide="x"></i></button></label>
+        <div id="conversation-list" class="conversation-list"></div>
+      </section>
+    </aside>
+    <button id="task-panel-toggle" class="task-panel-toggle" type="button" aria-label="收起最近对话" title="收起最近对话" aria-expanded="true"><i data-lucide="chevron-left"></i></button>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-title"><strong id="view-title">新对话</strong><span id="view-requirement-id" class="view-requirement-id" hidden></span><span id="view-meta" class="view-meta"></span></div>
+        <div class="topbar-actions">
+          <button id="mobile-task-toggle" class="icon-button mobile-task-toggle" type="button" aria-label="打开最近对话" title="最近对话"><i data-lucide="panel-left-open"></i></button>
+          <button id="demo-start" class="icon-button topbar-start" type="button" aria-label="开始执行示例对话" title="开始" hidden><i data-lucide="play"></i></button>
+          <button id="demo-rerun" class="icon-button topbar-rerun" type="button" aria-label="重新执行示例对话" title="重新执行" hidden><i data-lucide="rotate-ccw"></i></button>
+          <button id="workflow-toggle" class="icon-button" type="button" aria-label="打开需求流程抽屉" title="需求流程" aria-expanded="false"><i data-lucide="panel-right-open"></i></button>
+        </div>
+      </header>
+
+      <section id="chat-view" class="view chat-view is-active" aria-label="对话">
+        <div id="chat-content" class="chat-content is-empty">
+          <div id="empty-chat" class="empty-chat">
+            <span class="assistant-mark"><i data-lucide="bot"></i></span>
+            <strong id="empty-chat-title">今天要处理什么？</strong>
+            <p id="empty-chat-description">描述你的数仓开发需求，DW Agent 会协助完成需求评审、数仓调研、模型设计、数据开发和数据验证。</p>
+          </div>
+          <div id="message-list" class="message-list" aria-live="polite"></div>
+          <div class="composer-wrap">
+            <div id="skill-context" class="skill-context is-hidden" aria-label="当前对话使用的 Skills"><span class="skill-context-label"><i data-lucide="blocks"></i><strong>Skills</strong></span><div id="skill-context-items" class="skill-context-items"></div><button id="clear-skill-context" class="icon-button compact" type="button" aria-label="清除对话 Skills" title="清除 Skills"><i data-lucide="x"></i></button></div>
+            <div id="task-context" class="task-context is-hidden"><i data-lucide="blocks"></i><span id="task-context-label"></span><button id="clear-task-button" class="icon-button compact" type="button" aria-label="移除快速对话" title="移除快速对话"><i data-lucide="x"></i></button></div>
+            <div id="supplement-context" class="supplement-context" aria-label="本次补充内容" hidden>
+              <span class="supplement-context-label"><i data-lucide="link-2"></i><strong>正在补充</strong></span>
+              <div id="supplement-context-items" class="supplement-context-items"></div>
+              <button id="clear-supplement-context" class="icon-button compact" type="button" aria-label="退出补充模式" title="退出补充模式"><i data-lucide="x"></i></button>
+            </div>
+            <div id="workflow-rerun-context" class="task-context workflow-rerun-context is-hidden"><i data-lucide="rotate-ccw"></i><span id="workflow-rerun-context-label"></span><button id="clear-workflow-rerun" class="icon-button compact" type="button" aria-label="取消阶段重跑" title="取消阶段重跑"><i data-lucide="x"></i></button></div>
+            <div class="composer">
+              <textarea id="chat-input" rows="3" aria-label="对话描述" placeholder="提出你的需求，DW Agent帮你解决"></textarea>
+              <div id="attachment-list" class="attachment-list" aria-label="待发送附件" hidden></div>
+              <div class="composer-toolbar">
+                <div class="composer-left">
+                  <button id="file-button" class="icon-button" type="button" aria-label="添加本地文件" title="添加本地文件"><i data-lucide="plus"></i></button>
+                  <input id="file-input" type="file" accept="image/*,video/*,.md,.txt,.sql,.json,.yaml,.yml,.csv,.pdf,.docx,.pptx,.xlsx" multiple hidden>
+                  <span id="composer-divider" class="composer-divider"></span>
+                  <div class="model-picker">
+                    <button id="model-button" class="model-button" type="button" aria-label="选择模型" aria-haspopup="listbox" aria-expanded="false"><span class="model-dot">AI</span><span id="model-name">gpt-5.6-sol</span><i data-lucide="chevron-down"></i></button>
+                    <div id="model-menu" class="model-menu" hidden>
+                      <label class="model-search"><i data-lucide="search"></i><input id="model-search-input" type="search" placeholder="搜索模型" aria-label="搜索模型" autocomplete="off"></label>
+                      <div id="model-options" class="model-options" role="listbox" aria-label="可用模型"></div>
+                    </div>
+                  </div>
+                  <div class="skill-picker">
+                    <button id="skill-picker-button" class="skill-picker-button" type="button" aria-label="选择 Skills 和版本" aria-haspopup="dialog" aria-expanded="false"><i data-lucide="blocks"></i><span id="skill-picker-button-label">Skills</span><i data-lucide="chevron-down"></i></button>
+                    <div id="skill-picker-menu" class="skill-picker-menu" role="dialog" aria-label="选择 Skills 和版本" hidden>
+                      <header class="skill-picker-head"><label><i data-lucide="search"></i><input id="skill-picker-search" type="search" placeholder="搜索 Skill" aria-label="搜索 Skill" autocomplete="off"></label><button id="skill-picker-clear" type="button">清空</button></header>
+                      <div class="skill-picker-body"><section class="skill-picker-skills" aria-label="Skill 列表"><div id="skill-picker-list"></div></section><section class="skill-picker-versions" aria-label="版本列表"><div id="skill-picker-version-list" class="skill-picker-empty">选择一个 Skill 查看版本</div></section></div>
+                      <footer><span id="skill-picker-summary">已选择 0 个 Skill</span><button id="skill-picker-done" type="button">完成</button></footer>
+                    </div>
+                  </div>
+                  <div class="task-type-picker" hidden>
+                    <button id="task-type-button" class="task-type-button" type="button" aria-label="选择对话类型" aria-haspopup="listbox" aria-expanded="false"><span id="task-type-icon" class="task-type-button-icon"><i data-lucide="blocks"></i></span><span id="task-type-name">默认</span><i data-lucide="chevron-down"></i></button>
+                    <div id="task-type-menu" class="task-type-menu" role="listbox" aria-label="对话类型" hidden></div>
+                  </div>
+                </div>
+                <button id="send-button" class="send-button" type="button" aria-label="发送"><i data-lucide="arrow-up"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="requirements-view" class="view content-view requirements-view" aria-label="需求">
+        <form id="requirement-filters" class="requirement-filters" aria-label="需求筛选">
+          <label class="requirement-filter-field requirement-name-filter"><span>需求名称</span><input id="requirement-name-filter" type="search" placeholder="请输入需求名称/ID关键词" autocomplete="off"></label>
+          <label class="requirement-filter-field"><span>类型-变更</span><select id="requirement-type-change-filter"><option value="">全部</option></select></label>
+          <label class="requirement-filter-field"><span>流程进度</span><select id="requirement-stage-filter"><option value="">全部</option></select></label>
+          <label class="requirement-filter-field"><span>创建人</span><select id="requirement-creator-filter"><option value="">全部</option></select></label>
+          <label class="requirement-filter-field"><span>创建时间</span><input id="requirement-date-filter" type="date"></label>
+          <button id="requirement-filter-reset" class="command-button requirement-filter-reset" type="reset"><i data-lucide="rotate-ccw"></i><span>重置</span></button>
+          <button id="requirement-refresh" class="icon-button requirement-refresh" type="button" aria-label="刷新需求列表" title="刷新需求列表"><i data-lucide="refresh-cw"></i></button>
+        </form>
+        <section class="requirement-list-section" aria-label="需求列表">
+          <div class="requirement-table-wrap">
+            <table class="requirement-table">
+              <thead><tr><th>需求名称</th><th>会话ID</th><th>类型-变更</th><th>流程进度</th><th>创建人</th><th id="requirement-created-at-header" aria-sort="descending"><span class="requirement-sort-heading"><span>创建时间</span><button id="requirement-created-at-sort" class="requirement-sort-button" type="button" aria-label="创建时间降序，点击切换为升序" title="创建时间降序，点击切换为升序"><i data-lucide="arrow-down"></i></button></span></th><th>操作</th></tr></thead>
+              <tbody id="requirement-list"></tbody>
+            </table>
+          </div>
+          <footer id="requirement-pagination" class="requirement-pagination" aria-label="需求列表分页">
+            <span id="requirement-pagination-summary" class="requirement-pagination-summary"></span>
+            <div class="requirement-pagination-controls">
+              <label class="requirement-page-size"><span>每页</span><select id="requirement-page-size" aria-label="每页显示条数"><option value="20">20 条</option><option value="50" selected>50 条</option><option value="100">100 条</option></select></label>
+              <button id="requirement-page-prev" class="requirement-page-button" type="button" aria-label="上一页" title="上一页"><i data-lucide="chevron-left"></i></button>
+              <span id="requirement-page-indicator" class="requirement-page-indicator"></span>
+              <button id="requirement-page-next" class="requirement-page-button" type="button" aria-label="下一页" title="下一页"><i data-lucide="chevron-right"></i></button>
+            </div>
+          </footer>
+        </section>
+        <div id="requirement-detail" class="requirement-detail is-hidden"></div>
+      </section>
+
+      <section id="tasks-view" class="view content-view" aria-label="快速对话">
+        <div class="page-head"><div><h1>快速对话</h1><p>一次交互完成的独立对话</p></div></div>
+        <div id="task-list" class="task-grid"></div>
+      </section>
+
+      <section id="knowledge-view" class="view content-view config-knowledge-view" aria-label="知识库">
+        <header class="config-knowledge-head" hidden>
+          <div><h1>知识库</h1><p>维护数仓规范、业务知识与数据资产</p></div>
+          <button id="knowledge-library-open" class="command-button" type="button" hidden><i data-lucide="book-copy"></i><span>管理知识库</span></button>
+        </header>
+        <div id="knowledge-browser" class="knowledge-browser">
+          <aside class="knowledge-sidebar" aria-label="知识分类">
+            <div class="knowledge-sidebar-title"><strong>知识分类</strong><small id="knowledge-document-total">0 项</small></div>
+            <nav id="knowledge-category-nav" class="knowledge-category-nav"></nav>
+            <button id="knowledge-category-add" class="knowledge-category-add" type="button"><i data-lucide="plus"></i><span>新增分类</span></button>
+          </aside>
+          <section class="knowledge-document-panel">
+            <header class="knowledge-toolbar">
+              <div><strong id="knowledge-section-title">全部知识</strong><small id="knowledge-section-description">按类别浏览和维护知识内容</small></div>
+              <div class="knowledge-toolbar-actions"><div id="knowledge-category-actions" class="knowledge-category-toolbar-actions" role="group" aria-label="分类操作" hidden><button id="knowledge-category-edit" class="icon-button" type="button" aria-label="编辑当前分类" title="编辑分类名称"><i data-lucide="pencil"></i></button><button id="knowledge-category-delete" class="icon-button danger" type="button" aria-label="删除当前分类" title="删除分类"><i data-lucide="trash-2"></i></button></div><label class="knowledge-search"><i data-lucide="search"></i><input id="knowledge-search" type="search" placeholder="搜索知识名称或说明" aria-label="搜索知识"></label><button id="knowledge-create-open" class="command-button primary" type="button"><i data-lucide="plus"></i><span>新增知识</span></button></div>
+            </header>
+            <div id="knowledge-list" class="knowledge-list"></div>
+          </section>
+        </div>
+        <div id="knowledge-editor" class="knowledge-editor is-hidden">
+          <header class="knowledge-editor-head"><button id="knowledge-back" class="icon-button" type="button" aria-label="返回知识列表" title="返回知识列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong id="knowledge-editor-title">知识文档</strong><div class="knowledge-editor-meta"><small id="knowledge-editor-description"></small><span id="knowledge-editor-status" class="knowledge-editor-status"></span></div></div><div id="knowledge-editor-modebar" class="knowledge-editor-modebar" role="group" aria-label="查看方式" hidden><button class="knowledge-editor-mode-button is-active" type="button" title="预览文档" data-knowledge-editor-single-mode="preview"><i data-lucide="eye"></i><span>预览</span></button><button id="knowledge-editor-split" class="knowledge-editor-split-button" type="button" aria-label="分栏查看" title="分栏查看" aria-pressed="false"><i data-lucide="columns-2"></i></button></div><div class="knowledge-editor-actions" role="group" aria-label="文档操作"><button id="knowledge-history-open" class="icon-button" type="button" aria-label="查看历史版本" title="历史版本" hidden><i data-lucide="history"></i></button><button id="knowledge-download" class="icon-button" type="button" aria-label="下载知识文档" title="下载知识文档" hidden><i data-lucide="download"></i></button><button id="knowledge-editor-delete" class="icon-button danger" type="button" aria-label="删除知识" title="删除知识" hidden><i data-lucide="trash-2"></i></button><button id="knowledge-editor-edit" class="knowledge-editor-mode-button" type="button" title="编辑文档" data-knowledge-editor-single-mode="edit" hidden><i data-lucide="pencil"></i><span>编辑</span></button><button id="knowledge-save" class="command-button primary" type="button" disabled><i data-lucide="save"></i><span>保存</span></button></div></header>
+          <div class="knowledge-editor-layout"><section id="knowledge-editor-source-pane" class="knowledge-pane"><header><strong>Markdown</strong><small id="knowledge-editor-filename"></small></header><textarea id="knowledge-editor-input" spellcheck="false" aria-label="Markdown 内容"></textarea></section><section id="knowledge-editor-preview-pane" class="knowledge-pane"><header><strong>预览</strong><small>实时更新</small></header><div id="knowledge-editor-preview" class="knowledge-preview markdown-content"></div></section></div>
+        </div>
+        <section id="knowledge-routes" class="knowledge-hub-panel is-hidden" aria-label="需求解析路由">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回配置列表" title="返回配置列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>需求解析 Prompt</strong><small>通用解析合同与并列需求意图路由</small></div><span id="knowledge-routes-status" class="knowledge-editor-status"></span><button id="knowledge-route-create" class="command-button primary" type="button"><i data-lucide="plus"></i><span>新增路由</span></button></header>
+          <div class="knowledge-split-layout"><aside class="knowledge-record-list"><div id="knowledge-route-list"></div></aside><section id="knowledge-route-detail" class="knowledge-record-detail"><div class="empty-row">选择一条路由查看规则</div></section></div>
+        </section>
+        <section id="knowledge-validation" class="knowledge-hub-panel is-hidden" aria-label="数据验证规则库">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回配置列表" title="返回配置列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>数据验证规则库</strong><small>变更策略、稳定验证算子和通用规则</small></div><span id="knowledge-validation-status" class="knowledge-editor-status"></span></header>
+          <div class="knowledge-split-layout"><aside id="knowledge-validation-nav" class="knowledge-record-list"></aside><section id="knowledge-validation-detail" class="knowledge-record-detail"><div class="empty-row">选择一项查看规则定义</div></section></div>
+        </section>
+        <section id="knowledge-production" class="knowledge-hub-panel is-hidden" aria-label="生产资产目录">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回知识列表" title="返回知识列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>生产资产目录</strong><small>在线只读元数据，本地仅缓存名称和关系</small></div><span id="knowledge-production-status" class="knowledge-editor-status"></span><button id="knowledge-production-sync" class="command-button primary" type="button"><i data-lucide="refresh-cw"></i><span>同步</span></button></header>
+          <div class="knowledge-production-body"><div id="knowledge-production-metrics" class="knowledge-stat-grid"></div><label class="knowledge-wide-search"><i data-lucide="search"></i><input id="knowledge-production-query" type="search" placeholder="搜索 Project、Flow 或 Job 名称"></label><div id="knowledge-production-results" class="knowledge-result-list"></div></div>
+        </section>
+        <section id="knowledge-self-learning" class="knowledge-hub-panel is-hidden" aria-label="自学习知识">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回配置列表" title="返回配置列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>自学习知识</strong><small>已确认且作用域匹配的偏好、禁止项和解决模式</small></div><span id="knowledge-self-status" class="knowledge-editor-status"></span></header>
+          <div class="knowledge-split-layout"><aside class="knowledge-record-list"><header><strong>知识记录</strong><select id="knowledge-self-filter" aria-label="筛选自学习状态"><option value="">全部</option><option value="active">已生效</option><option value="pending_validation">待验证</option><option value="revoked">已停用</option><option value="superseded">已替代</option></select></header><div id="knowledge-self-list"></div></aside><section id="knowledge-self-detail" class="knowledge-record-detail"><div class="empty-row">选择一条记录查看规则、作用域和来源</div></section></div>
+        </section>
+        <section id="knowledge-assets" class="knowledge-hub-panel is-hidden" aria-label="知识资产">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回知识列表" title="返回知识列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong id="knowledge-assets-title">知识资产</strong><small id="knowledge-assets-description">结构化事实、Markdown 投影与向量索引</small></div><span id="knowledge-assets-status" class="knowledge-editor-status"></span><button id="knowledge-assets-learn-all" class="command-button" type="button"><i data-lucide="refresh-cw"></i><span>整体学习</span></button><button id="knowledge-assets-new" class="command-button primary" type="button"><i data-lucide="plus"></i><span>新增条目</span></button></header>
+          <div class="knowledge-split-layout"><aside class="knowledge-record-list"><header><strong>知识条目</strong><span id="knowledge-assets-count"></span></header><label class="knowledge-list-search"><i data-lucide="search"></i><input id="knowledge-assets-query" type="search" placeholder="搜索名称或 ID"></label><div id="knowledge-assets-list"></div></aside><section id="knowledge-assets-detail" class="knowledge-record-detail"><div class="empty-row">选择一条知识查看详情</div></section></div>
+        </section>
+        <section id="knowledge-tracking" class="knowledge-hub-panel is-hidden" aria-label="历史埋点检索">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回配置列表" title="返回配置列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>历史埋点检索</strong><small>Demo · 只读同步、物理事件定位与独立向量检索</small></div><span id="knowledge-tracking-status" class="knowledge-editor-status"></span><button id="knowledge-tracking-refresh" class="icon-button" type="button" aria-label="刷新" title="刷新"><i data-lucide="refresh-cw"></i></button></header>
+          <nav class="knowledge-tabs" aria-label="历史埋点检索视图"><button class="is-active" type="button" data-tracking-tab="search"><i data-lucide="search"></i><span>历史检索</span></button><button type="button" data-tracking-tab="sync"><i data-lucide="refresh-cw"></i><span>源同步</span></button><button type="button" data-tracking-tab="events"><i data-lucide="list-tree"></i><span>物理事件</span></button><button type="button" data-tracking-tab="evaluation"><i data-lucide="shield-check"></i><span>试点门禁</span></button></nav>
+          <div id="knowledge-tracking-body" class="knowledge-tab-body"></div>
+        </section>
+        <section id="knowledge-tracking-design" class="knowledge-hub-panel is-hidden" aria-label="埋点设计工作台">
+          <header class="knowledge-editor-head"><button class="icon-button" type="button" data-knowledge-hub-back aria-label="返回配置列表" title="返回配置列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>埋点设计工作台</strong><small>Demo · 需求拆解、事件评审、门禁与冻结评审版</small></div><span id="knowledge-design-status" class="knowledge-editor-status"></span><button id="knowledge-design-new" class="command-button primary" type="button"><i data-lucide="plus"></i><span>新建设计单</span></button></header>
+          <div class="knowledge-split-layout knowledge-design-layout"><aside class="knowledge-record-list"><header><strong>设计单</strong><span id="knowledge-design-count"></span></header><div id="knowledge-design-list"></div></aside><section id="knowledge-design-detail" class="knowledge-record-detail"><div class="empty-row">选择设计单或新建设计单</div></section></div>
+        </section>
+        <section id="library-knowledge-panel" class="library-panel library-knowledge-panel config-library-panel is-hidden">
+          <header class="knowledge-editor-head"><button id="hub-library-back" class="icon-button" type="button" aria-label="返回知识列表" title="返回知识列表"><i data-lucide="arrow-left"></i></button><div class="knowledge-editor-title"><strong>用户知识库</strong><small>上传业务文档，完成结构化学习后供 Agent 检索</small></div></header>
+          <div id="library-base-browser" class="library-base-browser">
+            <header class="library-action-head"><div><strong>业务知识库</strong><small>上传业务文档，完成结构化学习后供 Agent 检索</small></div><span class="library-action-spacer"></span><label class="library-search"><i data-lucide="search"></i><input id="library-search" type="search" placeholder="搜索知识库名称" aria-label="搜索知识库名称"></label><button id="library-create" class="command-button primary" type="button"><i data-lucide="plus"></i><span>新建知识库</span></button></header>
+            <div id="library-grid" class="library-grid"></div>
+          </div>
+          <section id="library-base-detail" class="library-base-detail is-hidden">
+            <header class="library-detail-head"><button id="library-detail-back" class="icon-button" type="button" aria-label="返回知识库列表" title="返回知识库列表"><i data-lucide="arrow-left"></i></button><div class="library-detail-title"><strong id="library-detail-name"></strong><small id="library-detail-description"></small></div><button id="library-edit" class="icon-button" type="button" aria-label="编辑知识库" title="编辑"><i data-lucide="pencil"></i></button><button id="library-delete" class="icon-button danger" type="button" aria-label="删除知识库" title="删除"><i data-lucide="trash-2"></i></button><span class="library-detail-spacer"></span><label class="library-search compact"><i data-lucide="search"></i><input id="library-file-search" type="search" placeholder="搜索文档名称" aria-label="搜索文档名称"></label><button id="library-batch-delete" class="command-button" type="button" disabled><i data-lucide="trash-2"></i><span>批量删除</span></button><button id="library-batch-relearn" class="command-button" type="button" disabled><i data-lucide="refresh-cw"></i><span>重新学习</span></button><button id="library-add-files" class="command-button primary" type="button"><i data-lucide="plus"></i><span>添加知识</span></button><input id="library-file-input" type="file" accept=".md,.txt,.sql,.json,.yaml,.yml,.csv,.pdf,.docx,.pptx" multiple hidden></header>
+            <div id="library-detail-meta" class="library-detail-meta"></div>
+            <div id="library-stats" class="library-stats"></div>
+            <div class="library-file-table-wrap"><table class="library-file-table"><thead><tr><th><input id="library-select-all" type="checkbox" aria-label="全选文档"></th><th>名称</th><th>学习状态</th><th>类型</th><th>标签</th><th>摘要</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="library-file-body"></tbody></table></div>
+            <footer id="library-file-footer" class="library-file-footer"></footer>
+          </section>
+        </section>
+      </section>
+
+      <section id="skills-view" class="view content-view skills-view" aria-label="Skills">
+        <div id="skills-browser" class="skills-browser">
+          <header class="skills-page-head">
+            <div><h1>Skills</h1><p>管理 Agent 可调用的专业能力</p></div>
+            <div class="skills-page-controls"><label class="skills-search"><i data-lucide="search"></i><input id="skill-search" type="search" placeholder="搜索 Skill 名称或描述" aria-label="搜索 Skills"></label><div class="skills-page-actions"><button id="custom-skill-add" class="command-button primary" type="button"><i data-lucide="upload"></i><span>导入 Skill</span></button></div></div>
+          </header>
+          <div id="custom-skill-list" class="custom-skill-list" aria-live="polite"></div>
+        </div>
+        <section id="skill-editor" class="skill-editor is-hidden" aria-label="Skill 编辑器">
+          <header class="skill-editor-head"><button id="skill-editor-back" class="icon-button" type="button" aria-label="返回 Skills" title="返回"><i data-lucide="arrow-left"></i></button><div class="skill-editor-title"><strong id="skill-editor-title">Skill</strong><div class="skill-editor-meta"><small id="skill-editor-description"></small><span id="skill-editor-status" class="skill-editor-status"></span></div></div><div class="skill-editor-skill-actions editor-toolbar-actions" role="group" aria-label="Skill 版本与管理操作"><button id="skill-history-open" class="icon-button" type="button" aria-label="查看 Skill 版本历史" title="版本历史"><i data-lucide="history"></i></button><button id="skill-export" class="icon-button" type="button" aria-label="导出 Skill 草稿" title="导出草稿"><i data-lucide="download"></i></button><button id="skill-delete" class="icon-button danger" type="button" aria-label="删除 Skill" title="删除"><i data-lucide="trash-2"></i></button><button id="skill-metadata-open" class="command-button editor-mode-button" type="button" title="编辑 Skill 基本信息"><i data-lucide="pencil"></i><span>编辑</span></button><button id="skill-publish" class="command-button primary" type="button"><i data-lucide="rocket"></i><span>发布</span></button></div></header>
+          <div id="skill-review-feedback" class="skill-review-feedback" hidden></div>
+          <div class="skill-editor-layout">
+            <aside class="skill-file-pane"><header><strong>文件</strong></header><div id="skill-file-tree" class="skill-file-tree" role="tree"></div></aside>
+            <section class="skill-content-pane"><header><span><strong id="skill-file-name">选择文件</strong><span class="skill-file-meta-line"><small id="skill-file-meta"></small><small id="skill-file-status" class="skill-file-status"></small></span></span><div class="skill-file-toolbar"><div class="skill-read-mode" role="group" aria-label="文件查看方式"><button class="is-active" type="button" data-skill-file-mode="preview"><i data-lucide="eye"></i><span>预览</span></button><button type="button" data-skill-file-mode="edit"><i data-lucide="pencil"></i><span>编辑</span></button></div><button id="skill-file-save" class="command-button primary editor-save-button" type="button" disabled><i data-lucide="save"></i><span>保存到草稿</span></button></div></header><div id="skill-file-preview" class="skill-file-preview markdown-content"><div class="skill-empty">从左侧选择文件</div></div><textarea id="skill-file-input" class="skill-file-input is-hidden" spellcheck="false" aria-label="Skill 文件内容"></textarea></section>
+            <aside class="skill-ai-pane"><header><div><strong>AI 修改</strong><small>确定性 Mock 建议</small></div><i data-lucide="sparkles"></i></header><label for="skill-ai-instruction">修改要求</label><textarea id="skill-ai-instruction" rows="5" maxlength="4000" placeholder="例如：补充输入校验和失败处理"></textarea><button id="skill-ai-submit" class="command-button primary" type="button"><i data-lucide="wand-sparkles"></i><span>生成修改建议</span></button><div id="skill-ai-empty" class="skill-ai-empty"><i data-lucide="file-diff"></i><span>选择文本文件后生成行级 Diff</span></div><section id="skill-ai-review" class="skill-ai-review is-hidden"><header><div><strong>修改建议</strong><small id="skill-ai-summary"></small></div></header><div id="skill-ai-diff" class="skill-ai-diff"></div><div class="skill-ai-review-actions"><button id="skill-ai-discard" class="command-button" type="button"><i data-lucide="x"></i><span>放弃</span></button><button id="skill-ai-apply" class="command-button primary" type="button"><i data-lucide="check"></i><span>确认并保存</span></button></div></section></aside>
+          </div>
+        </section>
+      </section>
+
+      <section id="agents-view" class="view content-view skills-view agents-view" aria-label="Agents">
+        <div class="skills-browser">
+          <header class="skills-page-head">
+            <div><h1>Agents</h1><p>管理对话可使用的 Agent</p></div>
+          </header>
+          <div id="agent-list" class="custom-skill-list agent-list" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="library-view" class="view library-view" aria-label="目录与知识库">
+        <header class="library-page-head">
+          <div><h1>目录与知识库</h1><p>浏览数据资产，管理可供 Agent 使用的知识文件</p></div>
+          <button id="catalog-refresh-head" class="icon-button" type="button" aria-label="刷新目录" title="刷新目录"><i data-lucide="refresh-cw"></i></button>
+        </header>
+
+        <section id="library-catalog-panel" class="library-panel library-catalog-panel">
+          <aside class="catalog-browser">
+            <header><strong>目录</strong><button id="catalog-refresh" class="icon-button" type="button" aria-label="刷新目录" title="刷新目录"><i data-lucide="refresh-cw"></i></button></header>
+            <label class="library-search"><i data-lucide="search"></i><input id="catalog-tree-search" type="search" placeholder="搜索当前空间目录" aria-label="搜索当前空间目录"></label>
+            <div id="catalog-tree" class="catalog-tree" role="tree"></div>
+          </aside>
+          <section class="catalog-detail">
+            <header class="catalog-detail-head"><div><span id="catalog-detail-icon" class="catalog-detail-icon"><i data-lucide="table-2"></i></span><span><strong id="catalog-detail-title">表</strong><small id="catalog-detail-path">Demo / 表</small></span></div><label class="library-search compact"><i data-lucide="search"></i><input id="catalog-detail-search" type="search" placeholder="搜索目录内容" aria-label="搜索目录内容"></label></header>
+            <div class="catalog-tabs"><button class="is-active" type="button">概览</button><button type="button" disabled>权限</button><button type="button" disabled>详情</button></div>
+            <div id="catalog-detail-body" class="catalog-detail-body"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <div id="knowledge-revision-drawer" class="knowledge-revision-drawer" hidden>
+      <button id="knowledge-revision-backdrop" class="knowledge-revision-backdrop" type="button" aria-label="关闭历史版本"></button>
+      <aside class="knowledge-revision-panel" aria-label="知识文档历史版本">
+        <header><div><strong id="knowledge-revision-title">历史版本</strong><small id="knowledge-revision-summary">正在加载...</small></div><button id="knowledge-revision-close" class="icon-button" type="button" aria-label="关闭历史版本" title="关闭"><i data-lucide="x"></i></button></header>
+        <div class="knowledge-revision-body"><nav id="knowledge-revision-list" class="knowledge-revision-list" aria-label="版本列表"></nav><section id="knowledge-revision-detail" class="knowledge-revision-detail"><div class="empty-row">选择一个版本查看内容</div></section></div>
+      </aside>
+    </div>
+
+    <aside id="workflow-drawer" class="workflow-drawer" aria-label="需求流程" hidden>
+      <header class="drawer-head">
+        <div class="requirement-heading">
+          <span class="workflow-drawer-label"><i data-lucide="workflow"></i><strong>数仓研发需求</strong></span>
+          <span id="drawer-requirement-meta" class="requirement-heading-meta" hidden><small id="drawer-requirement-id"></small><button id="drawer-requirement-copy" class="icon-button compact" type="button" aria-label="复制需求ID" title="复制需求ID"><i data-lucide="copy"></i></button></span>
+        </div>
+        <button id="workflow-close" class="icon-button" type="button" aria-label="关闭需求流程抽屉"><i data-lucide="x"></i></button>
+      </header>
+      <section id="drawer-workflow-view" class="drawer-view">
+        <ol id="review-step-list" class="review-step-list"></ol>
+      </section>
+      <footer class="drawer-footer"><span id="review-updated-at"></span></footer>
+    </aside>
+
+    <dialog id="artifact-panel" class="artifact-panel" aria-label="文件预览">
+      <header class="artifact-header"><div class="artifact-title"><i data-lucide="file-text"></i><strong id="artifact-name">文件</strong><small id="artifact-meta"></small></div><div class="artifact-actions"><button id="artifact-versions-open" class="icon-button" type="button" aria-label="收起版本历史" title="收起版本历史" aria-expanded="true" hidden><i data-lucide="panel-left-close"></i></button><button id="artifact-copy" class="icon-button" type="button" aria-label="复制" title="复制"><i data-lucide="copy"></i></button><button id="artifact-download" class="icon-button" type="button" aria-label="下载" title="下载"><i data-lucide="download"></i></button><button id="artifact-close" class="icon-button" type="button" aria-label="关闭"><i data-lucide="x"></i></button></div></header>
+      <div class="artifact-body">
+        <aside id="artifact-version-sidebar" class="artifact-version-sidebar" hidden><header><div><strong>版本历史</strong><small>选择版本查看完整产物</small></div><button id="artifact-versions-close" class="icon-button" type="button" aria-label="关闭版本历史"><i data-lucide="x"></i></button></header><nav id="artifact-version-list" aria-label="产物版本列表"></nav></aside>
+        <div id="artifact-preview" class="artifact-preview markdown-content"></div>
+        <pre id="artifact-content" class="artifact-content" hidden><code></code></pre>
+      </div>
+    </dialog>
+  </div>
+
+  <main id="account-page" class="account-page" hidden>
+    <aside class="account-sidebar" aria-label="账户导航">
+      <button id="account-logo" class="account-logo" type="button" aria-label="返回 DW Agent"><img class="brand-mark" src="./assets/logo-icon.svg?v=20260914-account-windmill-v2" alt=""></button>
+      <nav>
+        <button class="account-nav-item active" type="button" data-account-view="spaces"><i data-lucide="layout-grid"></i><span>空间</span></button>
+        <button id="account-user-nav" class="account-nav-item" type="button" data-account-view="users"><i data-lucide="user-round"></i><span>用户</span></button>
+        <button id="account-role-nav" class="account-nav-item" type="button" data-account-view="roles"><i data-lucide="shield-check"></i><span>角色</span></button>
+        <button id="account-notification-nav" class="account-nav-item" type="button" data-account-view="notifications"><i data-lucide="bell-ring"></i><span>通知</span></button>
+        <button id="account-skill-review-nav" class="account-nav-item" type="button" data-account-view="skill-reviews"><i data-lucide="badge-check"></i><span>审核</span><small id="account-skill-review-count" class="account-nav-count" hidden></small></button>
+        <button id="account-mcp-nav" class="account-nav-item" type="button" data-account-view="mcp"><i data-lucide="plug-zap"></i><span>MCP</span></button>
+        <button id="account-model-nav" class="account-nav-item" type="button" data-account-view="models"><i data-lucide="cpu"></i><span>模型</span></button>
+        <button id="account-audit-nav" class="account-nav-item" type="button" data-account-view="audit"><i data-lucide="activity"></i><span>审计</span></button>
+      </nav>
+      <div class="account-sidebar-footer"><button id="account-main-return" class="account-main-return" type="button" aria-label="返回主页面" title="返回主页面"><i data-lucide="house"></i></button></div>
+    </aside>
+    <section class="account-content" data-account-view-panel="spaces">
+      <header class="account-content-header"><h1>空间</h1><div><label class="account-space-search"><i data-lucide="search"></i><input id="account-space-search" type="search" placeholder="搜索空间..." aria-label="搜索空间"></label><button id="account-space-create" class="account-space-create" type="button"><i data-lucide="plus"></i><span>创建</span></button></div></header>
+      <div class="account-space-table" role="table" aria-label="空间列表"><div class="account-space-table-head" role="row"><span>空间名称</span><span>空间描述</span><span>创建人</span><span>创建时间</span><span>操作</span></div><div id="account-space-table-body"></div></div>
+    </section>
+    <section id="overview-view" class="account-content overview-view" data-account-view-panel="space-overview" aria-label="空间概览" hidden>
+      <div class="page-head overview-head">
+        <div class="overview-back-row">
+          <button id="overview-back-settings" class="command-button overview-back-settings" type="button"><i data-lucide="arrow-left"></i><span>返回</span></button>
+        </div>
+        <div class="overview-head-main">
+          <div class="overview-heading">
+            <div class="overview-title-row"><span id="overview-space-icon" class="space-option-icon overview-space-icon">AN</span><div><h1>你好，<span id="overview-space-name">Demo</span></h1><p id="overview-space-description"></p></div></div>
+          </div>
+          <button id="overview-new-chat" class="primary-button" type="button"><i data-lucide="plus"></i><span>开始新对话</span></button>
+        </div>
+      </div>
+      <div class="stat-grid overview-stat-grid" aria-label="空间统计">
+        <article class="stat-card"><span class="stat-icon blue"><i data-lucide="users-round"></i></span><div><span>空间成员</span><strong id="overview-member-count">-</strong></div><small>实时聚合</small></article>
+        <article class="stat-card"><span class="stat-icon violet"><i data-lucide="blocks"></i></span><div><span>Skills</span><strong id="overview-skill-count">-</strong></div><small>实时聚合</small></article>
+        <article class="stat-card"><span class="stat-icon green"><i data-lucide="book-open"></i></span><div><span>知识文档</span><strong id="overview-knowledge-count">-</strong></div><small>实时聚合</small></article>
+        <article class="stat-card"><span class="stat-icon amber"><i data-lucide="message-square-text"></i></span><div><span>我的会话</span><strong id="overview-conversation-count">-</strong></div><small>实时聚合</small></article>
+      </div>
+      <div class="overview-grid">
+        <section class="welcome-panel">
+          <div class="panel-kicker">WORKSPACE NOTE</div>
+          <h2>从资产开始，建立可回查的答案。</h2>
+          <p>选择已发布的 Skill 和知识文档，平台会在每次会话中固定版本范围，回答里的引用和工具事实都可以回到原始证据。</p>
+          <button id="overview-open-chat" class="text-button" type="button"><span>打开新会话</span><i data-lucide="arrow-up-right"></i></button>
+        </section>
+        <section class="quick-panel">
+          <div class="panel-heading"><div><div class="panel-kicker">QUICK START</div><h2>常用入口</h2></div></div>
+          <button id="overview-quick-chat" class="quick-row" type="button"><span class="quick-icon"><i data-lucide="message-square-text"></i></span><span><strong>新建对话</strong><small>从需求、调研或校验开始</small></span><i data-lucide="arrow-up-right"></i></button>
+          <button id="overview-quick-knowledge" class="quick-row" type="button"><span class="quick-icon"><i data-lucide="book-open"></i></span><span><strong>浏览知识库</strong><small>查看当前空间的发布文档</small></span><i data-lucide="arrow-up-right"></i></button>
+          <button id="overview-quick-skills" class="quick-row" type="button"><span class="quick-icon"><i data-lucide="blocks"></i></span><span><strong>管理 Skills</strong><small>查看版本与草稿状态</small></span><i data-lucide="arrow-up-right"></i></button>
+        </section>
+      </div>
+      <div class="overview-bottom-grid">
+        <section class="overview-model-permissions" aria-labelledby="overview-model-permissions-title">
+          <header class="overview-model-permissions-header"><div class="overview-model-permissions-title"><span class="overview-model-permissions-icon"><i data-lucide="sliders-horizontal"></i></span><div><h2 id="overview-model-permissions-title">模型权限</h2><p>勾选模型加入空间白名单，并指定默认模型。</p></div></div></header>
+          <div id="overview-model-permissions-list" class="overview-model-permissions-list" role="group" aria-label="空间模型权限"></div>
+          <footer class="overview-model-permissions-footer"><p id="overview-model-permissions-status" class="overview-model-permissions-status" aria-live="polite"></p><button id="overview-model-permissions-save" class="primary-button" type="button"><i data-lucide="save"></i><span>保存设置</span></button></footer>
+        </section>
+      </div>
+    </section>
+    <section class="account-content" data-account-view-panel="users" hidden>
+      <header class="account-content-header"><h1>用户</h1><div><label class="account-space-search"><i data-lucide="search"></i><input id="account-user-search" type="search" placeholder="搜索用户名称..." aria-label="搜索用户名称"></label><button id="account-user-create" class="account-space-create" type="button"><i data-lucide="plus"></i><span>新增用户</span></button></div></header>
+      <div class="account-user-table" role="table" aria-label="用户列表"><div class="account-user-table-head" role="row"><span>用户名称</span><span>角色</span><span>空间</span><span>创建时间</span><span>操作</span></div><div id="account-user-table-body"></div></div>
+    </section>
+    <section class="account-content" data-account-view-panel="roles" hidden>
+      <header class="account-content-header"><h1>角色</h1><div><label class="account-space-search"><i data-lucide="search"></i><input id="account-role-search" type="search" placeholder="搜索角色名称..." aria-label="搜索角色名称"></label><button id="account-role-create" class="account-space-create" type="button"><i data-lucide="plus"></i><span>新增角色</span></button></div></header>
+      <div class="account-role-table" role="table" aria-label="角色列表"><div class="account-role-table-head" role="row"><span>角色名称</span><span>角色说明</span><span>功能模块</span><span>创建时间</span><span>操作</span></div><div id="account-role-table-body"></div></div>
+    </section>
+    <section class="account-content notification-admin" data-account-view-panel="notifications" hidden>
+      <header class="account-content-header notification-admin-header"><h1>通知</h1><div><button id="notification-refresh-chats" class="notification-secondary-button" type="button"><i data-lucide="refresh-cw"></i><span>刷新群列表</span></button><button id="notification-save" class="account-space-create" type="button"><i data-lucide="save"></i><span>保存设置</span></button></div></header>
+      <section class="notification-overview" aria-label="飞书通知状态">
+        <div class="notification-app-identity"><span class="notification-app-icon"><i data-lucide="message-square-more"></i></span><span><strong>飞书应用机器人</strong><small id="notification-app-status">正在检查配置</small></span></div>
+        <label class="notification-url-field"><span>工作台访问地址</span><input id="notification-public-url" type="url" placeholder="http://dw-agent.example:8890"></label>
+        <label class="notification-switch"><input id="notification-enabled" type="checkbox"><span aria-hidden="true"></span><strong>启用通知</strong></label>
+      </section>
+      <section class="notification-section notification-route-section" aria-labelledby="notification-routes-title">
+        <header><h2 id="notification-routes-title">飞书群会话绑定</h2><span id="notification-chat-summary" class="notification-section-meta"></span></header>
+        <div class="notification-route-table" role="table" aria-label="空间飞书群会话绑定">
+          <div class="notification-route-head" role="row"><span>空间</span><span>目标飞书群</span><span>飞书群会话 ID</span><span>操作</span></div>
+          <div id="notification-route-body"></div>
+        </div>
+      </section>
+      <section class="notification-section" aria-labelledby="notification-events-title">
+        <header><h2 id="notification-events-title">通知节点</h2></header>
+        <div class="notification-event-grid">
+          <label><input type="checkbox" data-notification-event="skill_publish_review"><span>Skill 发布申请待审核</span></label>
+          <label><input type="checkbox" data-notification-event="skill_publish_reviewed"><span>Skill 发布申请已审核</span></label>
+          <label><input type="checkbox" data-notification-event="skill_publish_rejected"><span>Skill 发布申请已驳回</span></label>
+          <label><input type="checkbox" data-notification-event="requirement_review"><span>需求评审产物待确认</span></label>
+          <label><input type="checkbox" data-notification-event="warehouse_research"><span>数仓调研产物待确认</span></label>
+          <label><input type="checkbox" data-notification-event="model_design"><span>模型设计产物待确认</span></label>
+          <label><input type="checkbox" data-notification-event="data_development"><span>数据开发产物待确认</span></label>
+          <label><input type="checkbox" data-notification-event="data_validation"><span>数据验证产物待确认</span></label>
+          <label><input type="checkbox" data-notification-event="workflow_completed"><span>流程最终完成</span></label>
+        </div>
+      </section>
+      <section class="notification-section" aria-labelledby="notification-template-title">
+        <header><h2 id="notification-template-title">卡片配置</h2><span class="notification-section-meta">按通知节点独立配置</span></header>
+        <div class="notification-template-layout">
+          <div class="notification-template-form">
+            <label class="notification-form-field"><span>卡片类型</span><select id="notification-template-event"></select></label>
+            <label class="notification-form-field"><span>卡片标题</span><input id="notification-template-card-title" type="text" maxlength="120"></label>
+            <div id="notification-template-variables" class="notification-template-variables" aria-label="可用模板变量"></div>
+            <label id="notification-template-status-field" class="notification-form-field"><span>状态文案</span><textarea id="notification-template-status" rows="3" maxlength="240"></textarea></label>
+            <fieldset class="notification-theme-field"><legend>标题颜色</legend><div id="notification-template-themes" class="notification-theme-options"></div></fieldset>
+            <fieldset class="notification-card-options"><legend>卡片选项</legend><label><input id="notification-template-mention" type="checkbox"><span id="notification-template-mention-label">需求方使用 @ 提醒</span></label><label><input id="notification-template-button-enabled" type="checkbox"><span>显示查看详情按钮</span></label></fieldset>
+            <label class="notification-form-field"><span>按钮文案</span><input id="notification-template-button-label" type="text" maxlength="30"></label>
+            <fieldset class="notification-field-editor"><legend>显示字段与顺序</legend><div id="notification-template-fields"></div></fieldset>
+            <div class="notification-template-actions"><button id="notification-template-reset" class="notification-secondary-button" type="button"><i data-lucide="rotate-ccw"></i><span>恢复当前默认</span></button><label><span>测试群路由</span><select id="notification-template-test-space"></select></label><button id="notification-template-test" class="account-space-create" type="button"><i data-lucide="send"></i><span>发送测试</span></button></div>
+          </div>
+          <div class="notification-card-preview-wrap">
+            <span>实时预览</span>
+            <div id="notification-card-preview" class="notification-card-preview"></div>
+          </div>
+        </div>
+      </section>
+      <section class="notification-section" aria-labelledby="notification-mentions-title">
+        <header><h2 id="notification-mentions-title">飞书 @ 映射</h2><span id="notification-mention-summary" class="notification-section-meta"></span></header>
+        <div class="notification-mention-table" role="table" aria-label="AIDW 用户与飞书用户映射">
+          <div class="notification-mention-head" role="row"><span>AIDW 用户</span><span>飞书群成员</span><span>飞书 open_id</span><span>状态</span></div>
+          <div id="notification-mention-body"></div>
+        </div>
+      </section>
+      <section class="notification-section notification-delivery-section" aria-labelledby="notification-deliveries-title">
+        <header><h2 id="notification-deliveries-title">发送记录</h2><button id="notification-refresh-deliveries" class="icon-button" type="button" aria-label="刷新发送记录" title="刷新发送记录"><i data-lucide="refresh-cw"></i></button></header>
+        <div class="notification-delivery-table" role="table" aria-label="通知发送记录">
+          <div class="notification-delivery-head" role="row"><span>通知</span><span>空间 / 群</span><span>状态</span><span>发送时间</span><span>操作</span></div>
+          <div id="notification-delivery-body"></div>
+        </div>
+      </section>
+    </section>
+    <section class="account-content skill-review-admin" data-account-view-panel="skill-reviews" hidden>
+      <header class="account-content-header skill-review-admin-header"><div class="account-content-title"><h1>审核</h1><p>审核 Skill 发布申请与文件变更</p></div><div><div class="skill-review-filters" role="group" aria-label="审核状态"><button class="is-active" type="button" data-skill-review-filter="pending">待审核</button><button type="button" data-skill-review-filter="processed">已处理</button></div><button id="skill-review-refresh" class="notification-secondary-button" type="button" aria-label="刷新审核列表" title="刷新"><i data-lucide="refresh-cw"></i></button></div></header>
+      <div class="skill-review-layout"><aside class="skill-review-queue" aria-label="Skill 审核列表"><header><strong id="skill-review-list-title">待审核</strong><span id="skill-review-list-summary"></span></header><div id="skill-review-list" class="skill-review-list"></div></aside><section id="skill-review-detail" class="skill-review-detail"><div class="skill-review-empty"><i data-lucide="file-check-2"></i><strong>选择一条申请查看变更</strong></div></section></div>
+    </section>
+    <section id="knowledge-auth-settings" class="account-content account-auth-content" data-account-view-panel="auth" aria-label="认证" hidden>
+      <header class="account-content-header account-auth-header"><div class="account-content-title"><h1>认证</h1><p>HE Gateway 访问凭证</p></div><div><span id="knowledge-auth-status" class="knowledge-editor-status"></span><button id="knowledge-auth-save" class="account-space-create" type="submit" form="knowledge-auth-form"><i data-lucide="save"></i><span>保存</span></button></div></header>
+      <form id="knowledge-auth-form" class="knowledge-auth-layout" autocomplete="off"></form>
+    </section>
+    <section id="mcp-settings" class="account-content mcp-admin" data-account-view-panel="mcp" aria-label="MCP 服务" hidden>
+      <header class="account-content-header mcp-page-header">
+        <div class="account-content-title"><h1>MCP 服务</h1><p>配置空间可用的工具服务，控制读取与写入权限。</p></div>
+      </header>
+      <div class="mcp-layout">
+        <aside class="mcp-server-list-panel" aria-label="MCP 服务列表">
+          <header><strong>服务列表</strong><span id="mcp-server-count"></span></header>
+          <div id="mcp-server-list" class="mcp-server-list" aria-live="polite"></div>
+        </aside>
+        <section id="mcp-detail" class="mcp-detail" aria-label="MCP 服务详情">
+          <div class="mcp-empty-state"><i data-lucide="plug-zap"></i><strong>选择一个 MCP 服务</strong><span>查看服务连接信息和工具目录</span></div>
+        </section>
+      </div>
+    </section>
+    <section id="model-service-settings" class="account-content model-service-admin" data-account-view-panel="models" aria-label="模型" hidden>
+      <header class="account-content-header model-service-page-header">
+        <div class="account-content-title"><h1>模型</h1><p>管理上游模型、服务地址和会话可用性。</p></div>
+        <div class="model-service-header-actions"><button id="model-service-add-model" class="account-space-create" type="button"><i data-lucide="plus"></i><span>添加模型</span></button></div>
+      </header>
+      <div class="model-service-tabs" role="tablist" aria-label="模型类型"><button class="is-active" type="button" role="tab" aria-selected="true" data-model-service-tab="models"><i data-lucide="cpu"></i><span>模型</span></button><button type="button" role="tab" aria-selected="false" data-model-service-tab="providers"><i data-lucide="server-cog"></i><span>服务提供方</span></button></div>
+      <section id="model-service-models-panel" class="model-service-tab-panel" data-model-service-panel="models" role="tabpanel">
+        <div class="model-service-table" role="table" aria-label="模型列表"><div class="model-service-table-head" role="row"><span>模型</span><span>上游标识</span><span>上下文</span><span>状态</span><span>操作</span></div><div id="model-service-model-body"></div></div>
+      </section>
+      <section id="model-service-providers-panel" class="model-service-tab-panel" data-model-service-panel="providers" role="tabpanel" hidden>
+        <div class="model-service-subhead"><div><strong>服务提供方</strong><small>维护模型请求所使用的上游服务地址与凭证。</small></div><button id="model-service-add-provider" class="command-button" type="button"><i data-lucide="plus"></i><span>添加服务提供方</span></button></div>
+        <div class="model-service-provider-table" role="table" aria-label="服务提供方列表"><div class="model-service-provider-head" role="row"><span>名称</span><span>类型</span><span>服务地址</span><span>状态</span><span>操作</span></div><div id="model-service-provider-body"></div></div>
+      </section>
+    </section>
+    <section id="audit-settings" class="account-content audit-admin" data-account-view-panel="audit" aria-label="审计" hidden>
+      <header class="account-content-header audit-page-header">
+        <div class="account-content-title"><h1>审计</h1><p>查看任务生命周期和可追溯的执行状态，不展示模型凭据或完整提示词。</p></div>
+        <button id="audit-refresh" class="notification-secondary-button" type="button" aria-label="刷新审计记录" title="刷新"><i data-lucide="refresh-cw"></i><span>刷新</span></button>
+      </header>
+      <div class="audit-summary"><span id="audit-count">共 0 条任务记录</span></div>
+      <div id="audit-list" class="audit-list" role="list" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <dialog id="space-form-dialog" class="management-dialog"><form id="space-form"><header><h2 id="space-form-title">创建空间</h2><button id="space-form-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><label class="space-icon-field"><span>空间 Icon</span><div class="space-icon-control"><span id="space-form-icon-preview" class="space-form-icon-preview">SP</span><input id="space-form-icon" type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"><button id="space-form-icon-clear" type="button" class="space-form-icon-clear" hidden>移除</button></div></label><label><span>空间名称</span><input id="space-form-name" type="text" maxlength="80" placeholder="请输入空间名称" required></label><label><span>空间描述</span><input id="space-form-description" type="text" maxlength="20" placeholder="请输入空间描述（可选）"></label><p id="space-form-error" class="management-error" hidden></p><footer><button id="space-form-cancel" type="button">取消</button><button id="space-form-submit" class="primary" type="submit">创建</button></footer></form></dialog>
+  <dialog id="space-delete-dialog" class="management-dialog"><div><header><h2>删除空间</h2><button id="space-delete-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除“<strong id="space-delete-name"></strong>”吗？删除后无法恢复。</p><p id="space-delete-error" class="management-error" hidden></p><footer><button id="space-delete-cancel" type="button">取消</button><button id="space-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+  <dialog id="model-service-model-dialog" class="management-dialog model-service-dialog"><form id="model-service-model-form" novalidate><header><h2 id="model-service-model-dialog-title">添加模型</h2><button id="model-service-model-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><div class="model-service-form-content"><label><span>模型名称<em>*</em></span><input id="model-service-model-name" type="text" maxlength="120" placeholder="例如 gpt-5.6-sol" required></label><label><span>上游标识<em>*</em></span><input id="model-service-model-upstream" type="text" maxlength="160" placeholder="发送请求时使用的模型 ID" required></label><label><span>上下文长度<em>*</em></span><input id="model-service-model-context" type="number" min="1" max="10000000" step="1" value="32768" required></label><label><span>服务提供方<em>*</em></span><select id="model-service-model-provider" required></select></label><label class="model-service-checkbox"><input id="model-service-model-enabled" type="checkbox" checked><span>启用模型，可在会话中选择</span></label><p id="model-service-model-error" class="management-error" hidden></p></div><footer><button id="model-service-model-cancel" type="button">取消</button><button class="primary" type="submit"><i data-lucide="save"></i><span>保存</span></button></footer></form></dialog>
+  <dialog id="model-service-provider-dialog" class="management-dialog model-service-dialog"><form id="model-service-provider-form" novalidate><header><h2 id="model-service-provider-dialog-title">添加服务提供方</h2><button id="model-service-provider-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><div class="model-service-form-content"><label><span>名称<em>*</em></span><input id="model-service-provider-name" type="text" maxlength="80" placeholder="例如 OpenAI Gateway" required></label><label><span>类型<em>*</em></span><select id="model-service-provider-type"><option value="openai">OpenAI 兼容</option><option value="claude">Claude</option><option value="ollama">Ollama</option><option value="custom">自定义</option></select></label><label><span>服务地址</span><input id="model-service-provider-url" type="url" maxlength="500" placeholder="https://gateway.example/v1"></label><label><span>API Key</span><input id="model-service-provider-key" type="password" maxlength="500" placeholder="留空则保留原值"></label><label class="model-service-checkbox"><input id="model-service-provider-enabled" type="checkbox" checked><span>启用服务提供方</span></label><p id="model-service-provider-error" class="management-error" hidden></p></div><footer><button id="model-service-provider-cancel" type="button">取消</button><button class="primary" type="submit"><i data-lucide="save"></i><span>保存</span></button></footer></form></dialog>
+  <dialog id="user-form-dialog" class="management-dialog"><form id="user-form" novalidate><header><h2 id="user-form-title">新增用户</h2><button id="user-form-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><div class="user-form-content"><label><span>用户名称<em>*</em></span><input id="user-form-name" type="text" maxlength="80" autocomplete="off" placeholder="请输入登录账户名称" required></label><label id="user-password-row"><span>初始密码<em>*</em></span><input id="user-form-password" type="text" maxlength="256" autocomplete="new-password" required></label><label><span>角色<em>*</em></span><select id="user-form-role"><option value="admin">管理员</option><option value="data_product_manager">数据产品经理</option><option value="dw_engineer">数仓工程师</option></select></label><fieldset><legend>空间<em>*</em></legend><div id="user-form-space-list"></div></fieldset><p id="user-form-error" class="management-error" hidden></p></div><footer><button id="user-form-cancel" type="button">取消</button><button id="user-form-confirm" class="primary" type="submit">创建用户</button></footer></form></dialog>
+  <dialog id="role-form-dialog" class="management-dialog role-form-dialog"><form id="role-form" novalidate><header><h2 id="role-form-title">新增角色</h2><button id="role-form-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><div class="role-form-content"><label><span>角色名称<em>*</em></span><input id="role-form-name" type="text" maxlength="80" autocomplete="off" placeholder="请输入角色名称" required></label><label><span>角色说明</span><textarea id="role-form-description" maxlength="200" rows="3" placeholder="请输入角色说明"></textarea></label><fieldset><legend>功能模块<em>*</em></legend><div id="role-form-module-list"></div></fieldset><p id="role-form-error" class="management-error" hidden></p></div><footer><button id="role-form-cancel" type="button">取消</button><button id="role-form-confirm" class="primary" type="submit">创建角色</button></footer></form></dialog>
+  <dialog id="user-delete-dialog" class="management-dialog"><div><header><h2>删除用户</h2><button id="user-delete-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除用户“<strong id="user-delete-name"></strong>”吗？删除后该用户将立即无法登录。</p><p id="user-delete-error" class="management-error" hidden></p><footer><button id="user-delete-cancel" type="button">取消</button><button id="user-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+  <dialog id="conversation-delete-dialog" class="management-dialog conversation-delete-dialog"><div><header><h2>删除对话</h2><button id="conversation-delete-close" type="button" aria-label="关闭删除确认"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除对话“<strong id="conversation-delete-name"></strong>”吗？</p><p id="conversation-delete-warning" class="conversation-delete-warning">删除后无法恢复。</p><p id="conversation-delete-error" class="management-error" hidden></p><footer><button id="conversation-delete-cancel" type="button">取消</button><button id="conversation-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+  <dialog id="knowledge-category-form-dialog" class="management-dialog"><form id="knowledge-category-form" novalidate><header><h2 id="knowledge-category-form-title">新增分类</h2><button id="knowledge-category-form-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><label><span>分类名称</span><input id="knowledge-category-name" type="text" maxlength="30" autocomplete="off" placeholder="请输入分类名称" required></label><p id="knowledge-category-form-error" class="management-error" hidden></p><footer><button id="knowledge-category-form-cancel" type="button">取消</button><button class="primary" type="submit">确定</button></footer></form></dialog>
+  <dialog id="knowledge-category-delete-dialog" class="management-dialog"><div><header><h2>删除分类</h2><button id="knowledge-category-delete-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除“<strong id="knowledge-category-delete-name"></strong>”吗？该分类下的 <strong id="knowledge-category-delete-count">0</strong> 条知识也会一并删除。</p><p class="knowledge-category-delete-warning">此操作无法恢复。</p><p id="knowledge-category-delete-error" class="management-error" hidden></p><footer><button id="knowledge-category-delete-cancel" type="button">取消</button><button id="knowledge-category-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+  <dialog id="knowledge-asset-create-dialog" class="management-dialog"><form id="knowledge-asset-create-form" novalidate><header><h2>新增条目</h2><button id="knowledge-asset-create-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><label><span>条目名称</span><input id="knowledge-asset-create-name" type="text" maxlength="80" autocomplete="off" placeholder="请输入条目名称" required></label><div class="knowledge-asset-import"><div class="knowledge-create-field-label"><span>导入本地文件</span><small>可选</small></div><div class="knowledge-create-file-control"><input id="knowledge-asset-create-file" type="file" accept=".md,.markdown,.json,text/markdown,application/json" hidden><button id="knowledge-asset-create-file-open" type="button"><i data-lucide="upload"></i><span>选择文件</span></button><span id="knowledge-asset-create-file-name">未选择文件</span><button id="knowledge-asset-create-file-clear" class="icon-button" type="button" aria-label="移除已选文件" title="移除文件" hidden><i data-lucide="x"></i></button></div></div><p id="knowledge-asset-create-error" class="management-error" hidden></p><footer><button id="knowledge-asset-create-cancel" type="button">取消</button><button class="primary" type="submit">确定</button></footer></form></dialog>
+  <dialog id="knowledge-asset-delete-dialog" class="management-dialog"><div><header><h2>删除条目</h2><button id="knowledge-asset-delete-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除“<strong id="knowledge-asset-delete-name"></strong>”吗？</p><p class="knowledge-category-delete-warning">此操作无法恢复。</p><p id="knowledge-asset-delete-error" class="management-error" hidden></p><footer><button id="knowledge-asset-delete-cancel" type="button">取消</button><button id="knowledge-asset-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+  <dialog id="knowledge-delete-dialog" class="management-dialog"><div><header><h2>删除知识</h2><button id="knowledge-delete-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除“<strong id="knowledge-delete-name"></strong>”吗？</p><p class="knowledge-category-delete-warning">删除后将无法查看或编辑此知识，此操作无法恢复。</p><p id="knowledge-delete-error" class="management-error" hidden></p><footer><button id="knowledge-delete-cancel" type="button">取消</button><button id="knowledge-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+
+  <dialog id="requirement-dialog" class="requirement-dialog">
+    <form id="requirement-form" method="dialog">
+      <div class="dialog-head"><strong>新建需求</strong><button id="requirement-dialog-close" class="icon-button" type="button" aria-label="关闭"><i data-lucide="x"></i></button></div>
+      <label for="requirement-title">需求名称</label><input id="requirement-title" name="title" required maxlength="120" placeholder="输入需求名称">
+      <label for="requirement-content">需求内容</label><textarea id="requirement-content" name="content" required rows="10" placeholder="粘贴飞书链接或需求正文"></textarea>
+      <div id="requirement-form-error" class="form-error"></div>
+      <div class="dialog-actions"><button id="requirement-cancel" class="command-button" type="button">取消</button><button class="command-button primary" type="submit">创建并开始</button></div>
+    </form>
+  </dialog>
+  <dialog id="knowledge-create-dialog" class="requirement-dialog knowledge-create-dialog">
+    <form id="knowledge-create-form" novalidate>
+      <div class="dialog-head"><strong>新增知识</strong><button id="knowledge-create-close" class="icon-button" type="button" aria-label="关闭新增知识窗口"><i data-lucide="x"></i></button></div>
+      <label for="knowledge-create-title">知识名称</label><input id="knowledge-create-title" name="title" required maxlength="80" autocomplete="off" placeholder="请输入知识名称">
+      <label for="knowledge-create-description">知识描述</label><textarea id="knowledge-create-description" name="description" rows="4" maxlength="200" placeholder="请输入知识用途或内容说明"></textarea>
+      <label for="knowledge-create-category">所属分类</label><select id="knowledge-create-category" name="category" required><option value="">请选择所属分类</option></select>
+      <fieldset class="knowledge-create-organization"><legend>内容组织方式</legend><div class="knowledge-create-segments"><label><input type="radio" name="organization_type" value="single_page" checked><span>单篇文档</span></label><label><input type="radio" name="organization_type" value="directory"><span>目录型文档</span></label></div></fieldset>
+      <div class="knowledge-create-import"><div class="knowledge-create-field-label"><span>导入 Markdown</span><small>可选</small></div><div id="knowledge-create-dropzone" class="knowledge-create-dropzone" role="button" tabindex="0" aria-label="拖拽或选择 Markdown 文件"><input id="knowledge-create-file" type="file" accept=".md,.markdown,text/markdown" hidden><i data-lucide="upload-cloud"></i><div><strong>拖拽文件到这里，或点击选择</strong><small id="knowledge-create-file-name">单篇文档最多 1 个文件</small></div><button id="knowledge-create-file-open" type="button"><i data-lucide="folder-open"></i><span>选择文件</span></button><button id="knowledge-create-file-clear" class="icon-button" type="button" aria-label="移除已选 Markdown 文件" title="清空文件" hidden><i data-lucide="x"></i></button></div></div>
+      <div id="knowledge-create-error" class="form-error"></div>
+      <div class="dialog-actions"><button id="knowledge-create-cancel" class="command-button" type="button">取消</button><button id="knowledge-create-submit" class="command-button primary" type="submit"><i data-lucide="plus"></i><span>创建</span></button></div>
+    </form>
+  </dialog>
+  <dialog id="library-dialog" class="library-dialog">
+    <form id="library-form" method="dialog">
+      <div class="dialog-head"><strong id="library-dialog-title">新建知识库</strong><button id="library-dialog-close" class="icon-button" type="button" aria-label="关闭"><i data-lucide="x"></i></button></div>
+      <label for="library-name">名称</label><input id="library-name" name="name" required maxlength="50" placeholder="请输入知识库名称">
+      <label for="library-description">描述</label><textarea id="library-description" name="description" rows="4" maxlength="200" placeholder="请输入描述信息"></textarea>
+      <label id="library-global-row" class="library-global-field"><input id="library-global-access" name="global_access" type="checkbox"><span><strong>所有空间可用</strong><small>全局知识库仅管理员可以修改</small></span></label>
+      <label id="library-initial-files-row" class="library-file-field">知识文件<input id="library-initial-files" type="file" accept=".md,.txt,.sql,.json,.yaml,.yml,.csv,.pdf,.docx,.pptx" multiple><small>支持 Markdown、文本、SQL、JSON、YAML、CSV、PDF、DOCX、PPTX，单文件不超过 20MB</small></label>
+      <div id="library-form-error" class="form-error"></div>
+      <div class="dialog-actions"><button id="library-dialog-cancel" class="command-button" type="button">取消</button><button id="library-dialog-submit" class="command-button primary" type="submit">创建</button></div>
+    </form>
+  </dialog>
+  <dialog id="library-confirm-dialog" class="library-confirm-dialog">
+    <div class="library-confirm-panel"><div class="dialog-head"><strong id="library-confirm-title">确认操作</strong><button id="library-confirm-close" class="icon-button" type="button" aria-label="关闭"><i data-lucide="x"></i></button></div><p id="library-confirm-message"></p><div class="dialog-actions"><button id="library-confirm-cancel" class="command-button" type="button">取消</button><button id="library-confirm-submit" class="command-button danger" type="button">确认</button></div></div>
+  </dialog>
+  <dialog id="skill-import-dialog" class="skill-dialog skill-import-dialog">
+    <form id="skill-import-form" method="dialog">
+      <div class="dialog-head"><strong>导入 Skill</strong><button id="skill-import-close" class="icon-button" type="button" aria-label="关闭导入窗口"><i data-lucide="x"></i></button></div>
+      <div id="skill-import-dropzone" class="skill-import-dropzone" role="button" tabindex="0" aria-label="拖放或选择 Skill 文件">
+        <i data-lucide="upload-cloud"></i><strong>拖拽文件或文件夹到这里</strong><small class="skill-import-support">支持 SKILL.md、ZIP 和完整 Skill 文件夹</small>
+        <div class="skill-import-pickers"><button id="skill-import-file-button" class="command-button" type="button"><i data-lucide="files"></i><span>选择文件</span></button></div>
+        <div id="skill-import-selection" class="skill-import-selection is-hidden"></div>
+        <input id="custom-skill-file" type="file" accept="SKILL.md,.zip,application/zip" hidden>
+      </div>
+      <div class="skill-import-rules"><span>必须且只能包含一个 SKILL.md</span><span>单文件不超过 2 MB，整个包不超过 4 MB</span><span>最多 200 个有效文件，自动忽略缓存文件</span></div>
+      <div id="skill-import-error" class="form-error"></div><div class="dialog-actions"><button id="skill-import-cancel" class="command-button" type="button">取消</button><button id="skill-import-submit" class="command-button primary" type="submit" disabled><i data-lucide="package-plus"></i><span>导入 Skill</span></button></div>
+    </form>
+  </dialog>
+  <dialog id="skill-metadata-dialog" class="skill-dialog skill-metadata-dialog">
+    <form id="skill-metadata-form" method="dialog"><div class="dialog-head"><strong id="skill-metadata-heading">Skill 基本信息</strong><button id="skill-metadata-close" class="icon-button" type="button" aria-label="关闭基本信息窗口"><i data-lucide="x"></i></button></div><label for="skill-metadata-title">显示标题</label><input id="skill-metadata-title" name="title" required maxlength="160"><label for="skill-metadata-name">Skill 标识</label><input id="skill-metadata-name" name="name" required maxlength="64" pattern="[a-z0-9]+(?:-[a-z0-9]+)*"><label for="skill-metadata-description">描述</label><textarea id="skill-metadata-description" name="description" required maxlength="500" rows="4"></textarea><div id="skill-metadata-error" class="form-error"></div><div class="dialog-actions"><button id="skill-metadata-cancel" class="command-button" type="button">取消</button><button class="command-button primary" type="submit"><i data-lucide="save"></i><span id="skill-metadata-submit-label">保存</span></button></div></form>
+  </dialog>
+  <dialog id="skill-publish-dialog" class="skill-dialog skill-publish-dialog">
+    <form id="skill-publish-form" method="dialog"><div class="dialog-head"><div><strong>提交发布审核</strong><small id="skill-publish-subtitle">将当前草稿冻结为完整版本</small></div><button id="skill-publish-close" class="icon-button" type="button" aria-label="关闭发布窗口"><i data-lucide="x"></i></button></div><label for="skill-publish-version">版本号</label><input id="skill-publish-version" name="version" required maxlength="24" pattern="v?\d+\.\d+\.\d+"><label for="skill-publish-notes">发布说明</label><textarea id="skill-publish-notes" name="notes" maxlength="500" rows="3" placeholder="说明本次版本的主要变化"></textarea><section class="skill-publish-summary"><header><strong>本次发布内容</strong><span id="skill-publish-change-count"></span></header><div id="skill-publish-changes" class="skill-version-files"></div></section><label for="skill-publish-reviewer">审核人</label><select id="skill-publish-reviewer" name="reviewer" required><option value="">请选择当前空间成员</option></select><div id="skill-publish-error" class="form-error"></div><div class="dialog-actions"><button id="skill-publish-cancel" class="command-button" type="button">取消</button><button class="command-button primary" type="submit"><i data-lucide="send"></i><span>提交审核</span></button></div></form>
+  </dialog>
+  <dialog id="skill-delete-dialog" class="management-dialog"><div><header><h2>删除 Skill</h2><button id="skill-delete-close" type="button" aria-label="关闭删除确认"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确定删除“<strong id="skill-delete-name"></strong>”吗？</p><p class="knowledge-category-delete-warning">删除后将无法查看、编辑或用于对话，此操作无法恢复。</p><p id="skill-delete-error" class="management-error" hidden></p><footer><button id="skill-delete-cancel" type="button">取消</button><button id="skill-delete-confirm" class="danger" type="button">确认删除</button></footer></div></dialog>
+  <dialog id="skill-review-approve-dialog" class="management-dialog"><div><header><h2>通过发布申请</h2><button id="skill-review-approve-close" type="button" aria-label="关闭通过确认"><i data-lucide="x"></i></button></header><p class="management-confirm-copy">确认通过“<strong id="skill-review-approve-name"></strong>”的发布申请吗？</p><p class="knowledge-category-delete-warning">通过后该版本将正式发布，并可被 Agent 调用。</p><p id="skill-review-approve-error" class="management-error" hidden></p><footer><button id="skill-review-approve-cancel" type="button">取消</button><button id="skill-review-approve-confirm" class="primary" type="button">确认通过</button></footer></div></dialog>
+  <dialog id="skill-review-reject-dialog" class="management-dialog skill-review-reject-dialog">
+    <form id="skill-review-reject-form" method="dialog"><header><div><h2>驳回发布申请</h2><small id="skill-review-reject-subtitle"></small></div><button id="skill-review-reject-close" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><label><span>驳回原因</span><textarea id="skill-review-reject-reason" rows="4" maxlength="500" required placeholder="说明需要修改的内容"></textarea></label><p id="skill-review-reject-error" class="management-error" hidden></p><footer><button id="skill-review-reject-cancel" type="button">取消</button><button class="danger" type="submit">确认驳回</button></footer></form>
+  </dialog>
+  <div id="skill-version-drawer" class="knowledge-revision-drawer skill-version-drawer" hidden>
+    <button id="skill-version-backdrop" class="knowledge-revision-backdrop" type="button" aria-label="关闭版本历史"></button><aside class="knowledge-revision-panel"><header><div><strong id="skill-version-title">Skill 版本历史</strong><small>查看版本间的文件与内容变化</small></div><button id="skill-version-close" class="icon-button" type="button" aria-label="关闭版本历史"><i data-lucide="x"></i></button></header><div class="knowledge-revision-body"><nav id="skill-version-list" class="knowledge-revision-list" aria-label="Skill 版本列表"></nav><section id="skill-version-detail" class="knowledge-revision-detail"><div class="skill-empty">选择一个版本查看变更</div></section></div></aside>
+  </div>
+  <div id="library-learning-drawer" class="library-learning-drawer" hidden>
+    <button id="library-learning-backdrop" class="library-learning-backdrop" type="button" aria-label="关闭学习详情"></button>
+    <aside class="library-learning-panel"><header><div><small>学习详情</small><strong id="library-learning-title">文件学习内容</strong></div><button id="library-learning-close" class="icon-button" type="button" aria-label="关闭"><i data-lucide="x"></i></button></header><div id="library-learning-body" class="library-learning-body"></div></aside>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
