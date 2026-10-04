@@ -14,9 +14,9 @@ python3 -m http.server 8898
 
 ## 发布
 
-推送到 `main` 分支后，GitHub Actions 会发布 GitHub Pages。页面地址通常为：
+推送到 `main` 分支后，GitHub Actions 会发布 GitHub Pages。页面地址：
 
-`https://<用户名>.github.io/aidw-v1.0.0-demo/`
+https://tongyi1212.github.io/dw-agent/
 
 ## 版本
 
